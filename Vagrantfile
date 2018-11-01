@@ -3,11 +3,11 @@
 
 Vagrant.configure("2") do |config|
   config.vm.define "master" do |master|
-    master.vm.box = "bento/ubuntu-16.04"
+    master.vm.box = "bento/ubuntu-18.04"
     master.vm.provider "hyperv" do |hv|
       hv.vmname = "K8s-master"
-      hv.memory = 1024
-      hv.maxmemory = 2048
+      hv.memory = 2048
+      hv.maxmemory = 4096
       hv.cpus = 2
       hv.linked_clone = true
     end
@@ -22,11 +22,11 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define "nodea" do |nodea|
-    nodea.vm.box = "bento/ubuntu-16.04"
+    nodea.vm.box = "bento/ubuntu-18.04"
     nodea.vm.provider "hyperv" do |hv|
       hv.vmname = "K8s-nodea"
-      hv.memory = 1024
-      hv.maxmemory = 2048
+      hv.memory = 2048
+      hv.maxmemory = 4096
       hv.cpus = 2
       hv.linked_clone = true
     end
@@ -42,11 +42,11 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define "nodeb" do |nodeb|
-    nodeb.vm.box = "bento/ubuntu-16.04"
+    nodeb.vm.box = "bento/ubuntu-18.04"
     nodeb.vm.provider "hyperv" do |hv|
       hv.vmname = "K8s-nodeb"
-      hv.memory = 1024
-      hv.maxmemory = 2048
+      hv.memory = 2048
+      hv.maxmemory = 4096
       hv.cpus = 2
       hv.linked_clone = true
     end
@@ -59,5 +59,25 @@ Vagrant.configure("2") do |config|
     nodeb.vm.provision "shell", path: "install-docker.sh"
     nodeb.vm.provision "shell", path: "install-k8s.sh"
     nodeb.vm.provision "shell", inline: "sh /vagrant/tmp/join.sh"
+  end
+
+  config.vm.define "nodec" do |nodec|
+    nodec.vm.box = "bento/ubuntu-18.04"
+    nodec.vm.provider "hyperv" do |hv|
+      hv.vmname = "K8s-nodec"
+      hv.memory = 2048
+      hv.maxmemory = 4096
+      hv.cpus = 2
+      hv.linked_clone = true
+    end
+    nodec.vm.synced_folder ".", "/vagrant", type: "rsync",
+      rsync__exclude: ".git/"
+
+    nodec.vm.hostname = "nodec.localdomain"
+
+    nodec.vm.provision "shell", path: "disable-swap.sh"
+    nodec.vm.provision "shell", path: "install-docker.sh"
+    nodec.vm.provision "shell", path: "install-k8s.sh"
+    nodec.vm.provision "shell", inline: "sh /vagrant/tmp/join.sh"
   end
 end

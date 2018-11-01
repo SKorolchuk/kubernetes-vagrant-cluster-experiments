@@ -1,8 +1,8 @@
 # Vagrant Kubernetes cluster configuration for Ubuntu-based VM on Hyper-V
 
-Building a 2 node Windows/Linux cluster
+Building a 3 node Linux cluster
 
-Once you have some of the basics down with Kubernetes, it's time to build a larger cluster with both Windows & Linux nodes.
+Once you have some of the basics down with Kubernetes, it's time to build a larger cluster with both Linux nodes.
 
 This tutorial will create a Kubernetes master running in a Linux VM, which can also be used to run containers. Once the master is up, the Windows host will be added to the same cluster. The same steps could be used to join other existing machines as well, or you could create even more VMs to join as needed.
 Prerequisites
@@ -11,19 +11,16 @@ Prerequisites
     Hyper-V role installed
     Vagrant 1.9.3 or later for Windows 64-bit
 
-
-
 ### Setting up the Linux master with ubuntu
 
 Get a clean ubuntu image up
 
 ```powershell
-vagrant box add ubuntu-16
+vagrant box add bento/ubuntu-18.04
 # Choose hyperv provider when prompted
-vagrant init ubuntu-16
+vagrant init bento/ubuntu-18.04
 vagrant up
 ```
-
 
 This also has Vagrant provisioner steps to:
 
@@ -31,14 +28,11 @@ This also has Vagrant provisioner steps to:
 - Install latest versions of kubectl & kubeadm from Kubernetes package repo
 - Initialize a simple cluster with `kubeadm init`
 
-
-
 ### Step 1 - Start the Kubernetes master
 
 `vagrant up master`
 
 The last provisioner step in the `Vagrantfile` runs `install-k8s.sh` which will install all the packages and create a Kubernetes master. These steps were adapted from the [official guide](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)
-
 
 ```none
 [kubeadm] WARNING: kubeadm is in beta, please do not use it for production clusters.
@@ -97,8 +91,8 @@ There are two important areas you need to save for later:
 - The kube config
 - The kubeadm join line
 
-
 #### Getting the kube config
+
 First, get a copy of the kubeadm config into your home directory in the ubuntu VM. Connect with `vagrant ssh master` for the next step
 
 ```bash
@@ -123,7 +117,6 @@ Normally, the Vagrant synced folders would make this easy but there's a few limi
 if ((test-path tmp) -eq $false) { mkdir tmp }
 vagrant ssh -c 'cat /vagrant/tmp/join.sh' master | out-file -encoding ascii "tmp/join.sh"
 ```
-
 
 ### Setting up Flannel on master
 
@@ -151,7 +144,6 @@ kube-system   kube-proxy-jrvqf                             1/1       Running   0
 kube-system   kube-scheduler-master.localdomain            1/1       Running   0          9m
 ```
 
-
 ### Managing the Kubernetes cluster from Windows
 
 Now, it's time to get the config file needed out of the VM and onto your Windows machine
@@ -161,8 +153,8 @@ mkdir ~/.kube
 vagrant ssh  -c 'cat ~/.kube/config' master | out-file ~/.kube/config -encoding ascii
 ```
 
-If you don't already have kubectl.exe on your machine and in your path, there's a few different 
-ways you can do it. The `kubernetes-cli` [choco package](https://chocolatey.org/packages/kubernetes-cli) 
+If you don't already have kubectl.exe on your machine and in your path, there's a few different
+ways you can do it. The `kubernetes-cli` [choco package](https://chocolatey.org/packages/kubernetes-cli)
 is probably the easiest - `choco install kubernetes-cli`. If you want to do this manually - look for the `kubernetes-client-windows-amd64.tgz` download in the [Kubernetes 1.10 release notes](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.10.md#client-binaries)
 
 > Tip: Later you can use `choco upgrade kubernetes-cli` to get a new release
@@ -181,6 +173,8 @@ ran the extra step to copy `join.sh` back to the host before going forward.
     master.localdomain   Ready     master    8m        v1.10.0
     nodea.localdomain    Ready     <none>    36s       v1.10.0
 
+Repeat this step for `nodeb` and `nodec`
+
 ### Run a Linux service to test it out
 
 If you are still SSH'd to a Linux node, go ahead and type `exit` to disconnect. Next we'll bring it all together and use kubectl on Windows to deploy a service to the Linux nodes, then connect to it.
@@ -188,7 +182,7 @@ If you are still SSH'd to a Linux node, go ahead and type `exit` to disconnect. 
 These next steps will show:
 
 1. Creating a deployment `hello` that will run a container called `echoserver`
-2. Creating a service that's accessible on the node's IP 
+2. Creating a service that's accessible on the node's IP
 3. Connecting and making sure it works
 
 ```powershell
@@ -246,7 +240,6 @@ Which will return something like this:
     BODY:
     -no body in request-
 
-
 Try another cluster node's external IP if you want to make sure the Kubernetes cluster network is working ok. The client_address will change showing you accessed it from a different cluster node.
 
     HTTP/1.1 200 OK
@@ -274,7 +267,6 @@ Try another cluster node's external IP if you want to make sure the Kubernetes c
     BODY:
     -no body in request-
 
-
 Now the service is up and running on nodea! Once you're done, delete the service and deployment to clean
 everything back up.
 
@@ -293,13 +285,13 @@ Find latest binaries at:
 https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md
 
 Using [1.10.0](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.10.md#node-binaries):
+
 - [Windows node](https://dl.k8s.io/v1.10.0/kubernetes-node-windows-amd64.tar.gz)
 
 ## References
 
 - [Getting Started Guide - Windows](https://kubernetes.io/docs/getting-started-guides/windows/)
 - [Kubernetes the Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
-
 
 ## Building a 1-node Linux-based cluster with Minikube on Windows 10
 
